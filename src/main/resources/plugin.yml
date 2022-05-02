@@ -1,0 +1,6 @@
+name: MCFunThings
+version: '${project.version}'
+main: indi.goldenwater.mcfunthings.MCFunThings
+api-version: 1.18
+authors: [ Golden_Water ]
+description: Just some things for have fun
