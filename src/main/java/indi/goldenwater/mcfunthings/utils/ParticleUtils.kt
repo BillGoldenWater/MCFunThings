@@ -64,15 +64,15 @@ fun ParticleInfo.drawProjectileTrace(
     iterationTimes: Int = 100,
     drawEndBlock: Boolean = true,
     endBlockParticleInfo: ParticleInfo? = null,
-    gravityAcceleration: Double = 0.05,
-    resistance: Vector = Vector(0.01, 0.01, 0.01),
+    projectileInfo: ProjectileInfo,
+    entityCannotFly: Boolean = false,
 ) {
     val projectileTrace =
         initialVelocity.calcProjectileTrace(
             initialLocation,
             iterationTimes,
-            gravityAcceleration,
-            resistance,
+            projectileInfo,
+            entityCannotFly,
             ignoreBlock = !drawEndBlock
         )
 

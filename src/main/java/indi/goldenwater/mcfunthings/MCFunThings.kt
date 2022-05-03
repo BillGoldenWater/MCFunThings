@@ -88,27 +88,38 @@ object Loop : BukkitRunnable() {
             if (entity.isOnGround) return@forEach
             if (entity is Player && entity.isFlying) return@forEach
 
-            val projectileInfo = when (entity) {
-                is Item, is FallingBlock, is TNTPrimed -> ProjectileInfos.Item_FallingBlock_TNT
-                is Boat -> ProjectileInfos.Boat
-                is Minecart -> ProjectileInfos.Minecart
-                is Egg, is Snowball, is ThrownPotion, is EnderPearl -> ProjectileInfos.Egg_Snowball_Potion_EnderPearl
-                is Arrow, is Trident -> ProjectileInfos.Arrow_Trident
-                is Fireball, is ShulkerBullet -> ProjectileInfos.FireBall_WitherSkull_DragonFireBall_ShulkerBullet
-                is FishHook -> ProjectileInfos.FishHook
-                is LlamaSpit -> ProjectileInfos.LlamaSpit
-                else -> ProjectileInfos.Player_OtherEntity_ArmorStand
-            }
-
-            ParticleInfo(Particle.REDSTONE, DustOptions(Color.PURPLE, 0.5f)).drawProjectileTrace(
-                entity.velocity,
-                entity.location,
-                endBlockParticleInfo = ParticleInfo(Particle.END_ROD),
-                iterationTimes = 500,
-                gravityAcceleration = projectileInfo.gravityAcceleration,
-                resistance = projectileInfo.resistance
-            )
+            this.drawProjectileTrace(entity)
         }
+    }
+
+    private fun drawProjectileTrace(entity: Entity) {
+        ProjectileInfo.Player_Mob_WithSlowFalling
+        val projectileInfo = when (entity) {
+            is Item, is FallingBlock, is TNTPrimed -> ProjectileInfo.Item_FallingBlock_TNT
+            is Minecart -> ProjectileInfo.Minecart
+            is Boat -> ProjectileInfo.Boat
+            is Egg, is Snowball, is ThrownPotion, is EnderPearl -> ProjectileInfo.Egg_SnowBall_Potion_EnderPearl
+            is ExperienceOrb -> ProjectileInfo.ExperienceOrb
+            is FishHook -> ProjectileInfo.FishHook
+            is LlamaSpit -> ProjectileInfo.LlamaSpit
+            is Arrow, is Trident -> ProjectileInfo.Arrow_Trident
+            is Fireball -> {
+                if (entity is WitherSkull && entity.isCharged) ProjectileInfo.DangerousWitherSkull
+                ProjectileInfo.Fireball_WitherSkull_DragonFireball
+            }
+            else -> {
+                if (entity is LivingEntity && (entity is Player || entity is Mob))
+                    if (entity.activePotionEffects.any { it.type == PotionEffectType.SLOW_FALLING }) ProjectileInfo.Player_Mob_WithSlowFalling
+                ProjectileInfo.Player_OtherEntity
+            }
+        }
+        ParticleInfo(Particle.FLAME/*, DustOptions(Color.PURPLE, 0.5f)*/).drawProjectileTrace(
+            entity.velocity,
+            entity.location,
+            iterationTimes = 500,
+            endBlockParticleInfo = ParticleInfo(Particle.FLAME),
+            projectileInfo = projectileInfo,
+        )
     }
 }
 
