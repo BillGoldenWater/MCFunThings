@@ -1,8 +1,11 @@
 package indi.goldenwater.mcfunthings
 
+import indi.goldenwater.mcfunthings.data.rope.initTestRope
+import indi.goldenwater.mcfunthings.data.rope.testRope
 import indi.goldenwater.mcfunthings.utils.*
 import org.bukkit.*
 import org.bukkit.Particle.DustOptions
+import org.bukkit.Particle.REDSTONE
 import org.bukkit.entity.*
 import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin
@@ -13,6 +16,7 @@ import org.bukkit.util.RayTraceResult
 import kotlin.math.roundToInt
 
 object Loop : BukkitRunnable() {
+
     override fun run() {
         Bukkit.getServer().onlinePlayers
             .forEach {
@@ -49,7 +53,7 @@ object Loop : BukkitRunnable() {
                     else -> null
                 } ?: return@forEach
 
-                ParticleInfo(Particle.REDSTONE, dust).drawLine(loc, it.location, stepLength = 0.3)
+                ParticleInfo(REDSTONE, dust).drawLine(loc, it.location, stepLength = 0.3)
             }
         }
 
@@ -78,6 +82,20 @@ object Loop : BukkitRunnable() {
 
         if (player.inventory.itemInOffHand.type == Material.STONE) {
             player.sendBlockChange(loc.subtract(0.0, 1.0, 0.0), Material.STONE.createBlockData())
+        }
+
+        if (player.name == "Golden_Water" && player.inventory.itemInOffHand.type == Material.STICK) {
+            val tLoc = eLoc.clone().add(eLoc.direction.clone().multiply(10))
+
+            testRope.points[0].newPos(tLoc.toVector(), loc.world)
+            ParticleInfo(REDSTONE, DustOptions(Color.LIME, 0.3f)).drawRope(
+                rope = testRope,
+                location = Location(tLoc.world, 0.0, 0.0, 0.0),
+                pointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.BLACK, 0.5f)),
+                lockedPointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.RED, 0.5f))
+            )
+
+            testRope.tick(loc.world)
         }
     }
 
@@ -113,7 +131,8 @@ object Loop : BukkitRunnable() {
                 ProjectileInfo.Player_OtherEntity
             }
         }
-        ParticleInfo(Particle.FLAME/*, DustOptions(Color.PURPLE, 0.5f)*/).drawProjectileTrace(
+        if (entity !is Projectile) return
+        ParticleInfo(REDSTONE, DustOptions(Color.PURPLE, 0.5f)).drawProjectileTrace(
             entity.velocity,
             entity.location,
             iterationTimes = 500,
@@ -141,7 +160,8 @@ class MCFunThings : JavaPlugin() {
     override fun onEnable() {
         // Plugin startup logic
 
-        Loop.runTaskTimer(this, 0, 2)
+        initTestRope()
+        Loop.runTaskTimer(this, 0, 0)
 
         logger.info("Enabled")
     }
