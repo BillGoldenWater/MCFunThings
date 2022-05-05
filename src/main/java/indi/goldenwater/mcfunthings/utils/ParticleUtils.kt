@@ -90,16 +90,18 @@ fun ParticleInfo.drawProjectileTrace(
 fun ParticleInfo.drawRope(
     rope: Rope,
     location: Location,
+    drawStick: Boolean = true,
     pointParticleInfo: ParticleInfo = this,
-    lockedPointParticleInfo: ParticleInfo = this,
+    lockedPointParticleInfo: ParticleInfo = pointParticleInfo,
 ) {
     rope.points.forEach {
         val particle = if (it.locked) lockedPointParticleInfo else pointParticleInfo
         particle.drawPoint(location.clone().add(it.position))
     }
-    rope.sticks.forEach {
-        val loc1 = location.clone().add(it.point1.position)
-        val loc2 = location.clone().add(it.point2.position)
-        this.drawLine(loc1, loc2)
-    }
+    if (drawStick)
+        rope.sticks.forEach {
+            val loc1 = location.clone().add(it.point1.position)
+            val loc2 = location.clone().add(it.point2.position)
+            this.drawLine(loc1, loc2)
+        }
 }

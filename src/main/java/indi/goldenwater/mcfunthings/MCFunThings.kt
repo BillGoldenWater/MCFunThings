@@ -1,7 +1,9 @@
 package indi.goldenwater.mcfunthings
 
-import indi.goldenwater.mcfunthings.data.rope.initTestRope
-import indi.goldenwater.mcfunthings.data.rope.testRope
+import indi.goldenwater.mcfunthings.data.rope.createTestRope
+import indi.goldenwater.mcfunthings.data.rope.space
+import indi.goldenwater.mcfunthings.data.rope.xMax
+import indi.goldenwater.mcfunthings.type.rope.Rope
 import indi.goldenwater.mcfunthings.utils.*
 import org.bukkit.*
 import org.bukkit.Particle.DustOptions
@@ -13,9 +15,13 @@ import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.util.RayTraceResult
+import org.bukkit.util.Vector
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 object Loop : BukkitRunnable() {
+    lateinit var rope: Rope
+    var tickingRope: Boolean = false
 
     override fun run() {
         Bukkit.getServer().onlinePlayers
@@ -84,19 +90,46 @@ object Loop : BukkitRunnable() {
             player.sendBlockChange(loc.subtract(0.0, 1.0, 0.0), Material.STONE.createBlockData())
         }
 
-        if (player.name == "Golden_Water" && player.inventory.itemInOffHand.type == Material.STICK) {
-            val tLoc = eLoc.clone().add(eLoc.direction.clone().multiply(10))
+        if (player.name == "Golden_Water") {
+            if (tickingRope) {
+                if (player.inventory.itemInOffHand.type == Material.STICK) {
+                    tickingRope(player)
+                } else {
+                    tickingRope = false
+                }
+            } else if (player.inventory.itemInOffHand.type == Material.STICK) {
+                val tLoc = eLoc + eLoc.direction * 5.0
+                rope = createTestRope(tLoc.toVector())
+                tickingRope = true
+            }
 
-            testRope.points[0].newPos(tLoc.toVector(), loc.world)
-            ParticleInfo(REDSTONE, DustOptions(Color.LIME, 0.3f)).drawRope(
-                rope = testRope,
-                location = Location(tLoc.world, 0.0, 0.0, 0.0),
-                pointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.BLACK, 0.5f)),
-                lockedPointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.RED, 0.5f))
-            )
-
-            testRope.tick(loc.world)
         }
+    }
+
+    private fun tickingRope(player: Player) {
+        val eLoc = player.eyeLocation
+        val tLoc = eLoc + eLoc.direction * -0.5
+        tLoc.y = eLoc.y - 0.25
+
+        val angle = Math.toRadians(abs(eLoc.yaw - 360.0))
+
+        rope.points.filterIndexed { i, _ -> i % 10 == 0 && i < xMax }
+            .forEachIndexed { i, p ->
+                p.moveTo(
+                    tLoc.toVector().add(Vector((i - 1) * 10 * space, 0.0, 0.0).rotateAroundY(angle)),
+                    eLoc.world
+                )
+            }
+
+        ParticleInfo(REDSTONE, DustOptions(Color.LIME, 0.3f)).drawRope(
+            rope = rope,
+            location = Location(tLoc.world, 0.0, 0.0, 0.0),
+            drawStick = false,
+            pointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.RED, 0.3f)),
+            lockedPointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.RED, 0.3f)),
+        )
+
+        rope.tick(eLoc.world)
     }
 
     private fun processPlayerCanSee(player: Player) {
@@ -160,7 +193,6 @@ class MCFunThings : JavaPlugin() {
     override fun onEnable() {
         // Plugin startup logic
 
-        initTestRope()
         Loop.runTaskTimer(this, 0, 0)
 
         logger.info("Enabled")

@@ -1,12 +1,18 @@
 package indi.goldenwater.mcfunthings.type.rope
 
+import indi.goldenwater.mcfunthings.utils.Vector3
+import indi.goldenwater.mcfunthings.utils.minus
+import indi.goldenwater.mcfunthings.utils.plus
+import indi.goldenwater.mcfunthings.utils.times
 import org.bukkit.World
-import org.bukkit.util.Vector
 
 data class Rope(
     val points: MutableList<Point> = mutableListOf(),
     val sticks: MutableList<Stick> = mutableListOf(),
-    val stickIterationTimes: Int = 1
+    val stickIterationTimes: Int = 1,
+    val gravity: Double = 0.02,
+    val drag: Double = 0.05,
+    val dragOnGround: Double = 0.5,
 ) {
     fun addPoint(point: Point) {
         points.add(point)
@@ -25,30 +31,24 @@ data class Rope(
         points.forEach {
             if (it.locked) return@forEach
 
-            val newPos = it.position.clone()
-            // velocity
-            newPos.add(
-                it.position.clone()
-                    .subtract(it.prevPosition)
-                    .multiply(0.99) // drag
-            )
-            // gravity
-            newPos.subtract(
-                Vector(0.0, 0.02, 0.0)
-            )
+            val velocity = it.position - it.prevPosition
 
-            it.newPos(newPos, world)
+            velocity
+                .multiply(1 - drag)
+                .add(Vector3.down() * gravity)
+
+            it.moveTo(it.position + velocity, world)
         }
 
         for (i in 1..stickIterationTimes) {
             sticks.forEach {
-                val stickCenterPoint = it.point1.position.getMidpoint(it.point2.position)
-                val stickDirection = it.point1.position.clone().subtract(it.point2.position).normalize()
-                val stickLength = stickDirection.clone().multiply(it.length / 2)
+                val stickCenter = it.point1.position.getMidpoint(it.point2.position)
+                val stickDirection = (it.point1.position - it.point2.position).normalize()
+                val stickLength = stickDirection * (it.length / 2)
                 if (!it.point1.locked)
-                    it.point1.position = stickCenterPoint.clone().add(stickLength)
+                    it.point1.moveTo(stickCenter + stickLength, world, byStickUpdate = true)
                 if (!it.point2.locked)
-                    it.point2.position = stickCenterPoint.clone().subtract(stickLength)
+                    it.point2.moveTo(stickCenter - stickLength, world, byStickUpdate = true)
             }
         }
     }
