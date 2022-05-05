@@ -63,7 +63,6 @@ object Loop : BukkitRunnable() {
             }
         }
 
-        @Suppress("unused")
         if (player.inventory.itemInOffHand.type == Material.ARROW) {
             val rayTraceResult: RayTraceResult = eLoc.world.rayTrace(
                 eLoc,
@@ -100,6 +99,7 @@ object Loop : BukkitRunnable() {
             } else if (player.inventory.itemInOffHand.type == Material.STICK) {
                 val tLoc = eLoc + eLoc.direction * 5.0
                 rope = createTestRope(tLoc.toVector())
+//                rope = createTestRope2(tLoc.toVector(), tLoc.toVector() - eLoc.direction * 2.0)
                 tickingRope = true
             }
 
@@ -108,25 +108,24 @@ object Loop : BukkitRunnable() {
 
     private fun tickingRope(player: Player) {
         val eLoc = player.eyeLocation
-        val tLoc = eLoc + eLoc.direction * -0.5
-        tLoc.y = eLoc.y - 0.25
+        val tLoc = eLoc + eLoc.direction * 5.0
 
         val angle = Math.toRadians(abs(eLoc.yaw - 360.0))
 
-        rope.points.filterIndexed { i, _ -> i % 10 == 0 && i < xMax }
-            .forEachIndexed { i, p ->
-                p.moveTo(
-                    tLoc.toVector().add(Vector((i - 1) * 10 * space, 0.0, 0.0).rotateAroundY(angle)),
-                    eLoc.world
-                )
+        if (player.inventory.itemInMainHand.type == Material.BOW)
+            rope.points.filterIndexed { i, _ -> i % 20 == 0 && i < xMax }.let {
+                it[0].position = tLoc.toVector().add(Vector(-10 * space, 0.0, 0.0).rotateAroundY(angle))
+                it[1].position = tLoc.toVector().add(Vector(10 * space, 0.0, 0.0).rotateAroundY(angle))
             }
+//        if (player.inventory.itemInMainHand.type == Material.BOW)
+//            rope.addPoint(Point(tLoc.toVector(), tLoc.toVector() - eLoc.direction * 2.0))
 
         ParticleInfo(REDSTONE, DustOptions(Color.LIME, 0.3f)).drawRope(
             rope = rope,
             location = Location(tLoc.world, 0.0, 0.0, 0.0),
             drawStick = false,
-            pointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.RED, 0.3f)),
-            lockedPointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.RED, 0.3f)),
+            pointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.LIME, 0.5f)),
+            lockedPointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.RED, 0.5f)),
         )
 
         rope.tick(eLoc.world)
