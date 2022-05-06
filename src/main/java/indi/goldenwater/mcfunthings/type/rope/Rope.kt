@@ -74,9 +74,9 @@ data class Rope(
                 if (it.locked) return@forEach
                 val velocity = it.position - it.prevPosition
                 if (velocity == Vector3.zero()) velocity.add(Vector3.epsilon())
-                if (abs(velocity.x) > 100) return@forEach
-                if (abs(velocity.y) > 100) return@forEach
-                if (abs(velocity.z) > 100) return@forEach
+                if (abs(velocity.x) > 1) return@forEach
+                if (abs(velocity.y) > 1) return@forEach
+                if (abs(velocity.z) > 1) return@forEach
 
                 val ray = world.rayTrace(
                     it.prevPosition.toLocation(world),

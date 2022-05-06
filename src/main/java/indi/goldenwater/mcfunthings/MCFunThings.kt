@@ -3,6 +3,7 @@ package indi.goldenwater.mcfunthings
 import indi.goldenwater.mcfunthings.data.rope.createTestRope
 import indi.goldenwater.mcfunthings.data.rope.space
 import indi.goldenwater.mcfunthings.data.rope.xMax
+import indi.goldenwater.mcfunthings.listener.HandleChair
 import indi.goldenwater.mcfunthings.listener.OnEntityMoveEvent
 import indi.goldenwater.mcfunthings.type.rope.Rope
 import indi.goldenwater.mcfunthings.utils.*
@@ -18,7 +19,6 @@ import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.util.RayTraceResult
 import org.bukkit.util.Vector
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 object Loop : BukkitRunnable() {
     var rope: Rope? = null
@@ -29,19 +29,19 @@ object Loop : BukkitRunnable() {
             .forEach {
                 process(it)
             }
-        Bukkit.getServer().onlinePlayers
-            .distinctBy {
-                val loc = it.location
-                val worldName = loc.world.name
-                val distance = 100
-                val roundedX = (loc.x / distance).roundToInt()
-                val roundedY = (loc.y / distance).roundToInt()
-                val roundedZ = (loc.z / distance).roundToInt()
-                "$worldName${roundedX}${roundedY}${roundedZ}"
-            }
-            .forEach {
-                processPlayerCanSee(it)
-            }
+//        Bukkit.getServer().onlinePlayers
+//            .distinctBy {
+//                val loc = it.location
+//                val worldName = loc.world.name
+//                val distance = 100
+//                val roundedX = (loc.x / distance).roundToInt()
+//                val roundedY = (loc.y / distance).roundToInt()
+//                val roundedZ = (loc.z / distance).roundToInt()
+//                "$worldName${roundedX}${roundedY}${roundedZ}"
+//            }
+//            .forEach {
+//                processPlayerCanSee(it)
+//            }
     }
 
     private fun process(player: Player) {
@@ -92,18 +92,30 @@ object Loop : BukkitRunnable() {
 
         if (player.name == "Golden_Water") {
             if (tickingRope) {
-                if (player.inventory.itemInOffHand.type == Material.STICK) {
+                if (player.inventory.itemInOffHand.type == Material.PAPER) {
                     tickingRope(player)
                 } else {
                     tickingRope = false
                 }
-            } else if (player.inventory.itemInOffHand.type == Material.STICK) {
+            } else if (player.inventory.itemInOffHand.type == Material.PAPER) {
                 val tLoc = eLoc + eLoc.direction * 5.0
                 rope = createTestRope(tLoc)
 //                rope = Rope(world = tLoc.world)
                 tickingRope = true
             }
+            if (player.inventory.itemInOffHand.type == Material.BOW) {
+                val projectile: SpectralArrow = player.launchProjectile(
+                    SpectralArrow::class.java,
+                    player.velocity + eLoc.direction + (Vector.getRandom() - Vector(0.5, 0.5, 0.5)) * 0.2
+                )
+                projectile.isGlowing = true
+                projectile.pickupStatus = AbstractArrow.PickupStatus.DISALLOWED
+            }
+        }
 
+        Bukkit.getServer().selectEntities(player, "@e[tag=chair]").forEach {
+            if (it.passengers.isEmpty()) it.remove()
+            else if (it.location.block.isEmpty) it.remove()
         }
     }
 
@@ -113,13 +125,13 @@ object Loop : BukkitRunnable() {
 
         val angle = Math.toRadians(abs(eLoc.yaw - 360.0))
 
-        if (player.inventory.itemInMainHand.type == Material.BOW)
+        if (player.inventory.itemInMainHand.type == Material.STICK)
             rope?.points?.filterIndexed { i, _ -> i % 10 == 0 && i < xMax }
                 ?.forEachIndexed { i, it ->
                     it.position = tLoc.toVector().add(Vector((i - 1) * 10 * space, 0.0, 0.0).rotateAroundY(angle))
                 }
 
-//        if (player.inventory.itemInMainHand.type == Material.BOW)
+//        if (player.inventory.itemInMainHand.type == Material.STICK)
 //            rope?.addPoint(Point(tLoc.toVector(), tLoc.toVector() - eLoc.direction * 2.0))
 
         ParticleInfo(REDSTONE, DustOptions(Color.LIME, 0.3f))
@@ -127,8 +139,8 @@ object Loop : BukkitRunnable() {
                 rope = rope ?: return,
                 location = Location(tLoc.world, 0.0, 0.0, 0.0),
                 drawStick = false,
-                pointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.AQUA, 0.5f)),
-                lockedPointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.RED, 0.5f)),
+                pointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.AQUA, 0.2f)),
+                lockedPointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.RED, 0.2f)),
             )
 
 //        ParticleInfo(REDSTONE, DustOptions(Color.LIME, 0.5f))
@@ -201,6 +213,7 @@ class MCFunThings : JavaPlugin() {
         Loop.runTaskTimer(this, 0, 0)
 
         registerEvents(OnEntityMoveEvent)
+        registerEvents(HandleChair)
 
         logger.info("Enabled")
     }
