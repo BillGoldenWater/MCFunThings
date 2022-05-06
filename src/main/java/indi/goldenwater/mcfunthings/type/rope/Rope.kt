@@ -13,11 +13,12 @@ import kotlin.math.abs
 data class Rope(
     val points: MutableList<Point> = mutableListOf(),
     val sticks: MutableList<Stick> = mutableListOf(),
+    val world: World,
     val entityForces: MutableMap<Entity, Vector> = mutableMapOf(),
     val iterationTimes: Int = 1,
-    val gravity: Double = 0.08,
-    val drag: Double = 0.02,
-    val bounceDrag: Double = 0.05,
+    val gravity: Double = 0.04,
+    val drag: Double = 0.01,
+    val bounceDrag: Double = 0.25,
 ) {
     fun addPoint(point: Point) {
         points.add(point)
@@ -32,14 +33,12 @@ data class Rope(
         addStick(prevPoint, point)
     }
 
-    fun tick(world: World? = null) {
+    fun tick() {
         this.tickPoints()
         for (i in 1..iterationTimes) {
             this.tickSticks()
-            world?.also { tickCollision(it) }
+            tickCollision()
         }
-        world?.also { tickCollision(it, calcEntityForce = true) }
-        this.tickEntityForce()
     }
 
     private fun tickPoints() {
@@ -69,12 +68,12 @@ data class Rope(
         }
     }
 
-    private fun tickCollision(world: World, calcEntityForce: Boolean = false) {
+    fun tickCollision() {
         points.forEach {
             try {
                 if (it.locked) return@forEach
-                var velocity = it.position - it.prevPosition
-                if (velocity == Vector3.zero()) return@forEach
+                val velocity = it.position - it.prevPosition
+                if (velocity == Vector3.zero()) velocity.add(Vector3.epsilon())
                 if (abs(velocity.x) > 100) return@forEach
                 if (abs(velocity.y) > 100) return@forEach
                 if (abs(velocity.z) > 100) return@forEach
@@ -82,36 +81,23 @@ data class Rope(
                 val ray = world.rayTrace(
                     it.prevPosition.toLocation(world),
                     velocity,
-                    velocity.length(),
+                    velocity.length().coerceAtLeast(0.3),
                     FluidCollisionMode.NEVER,
                     true,
                     0.01
                 ) { true } ?: return@forEach
 
-                if (!calcEntityForce)
-                    ray.hitBlockFace?.let { face ->
-                        if (face.modX != 0) velocity.x *= -1.0
-                        if (face.modY != 0) velocity.y *= -1.0
-                        if (face.modZ != 0) velocity.z *= -1.0
+                ray.hitBlockFace?.let { face ->
+                    if (face.modX != 0) velocity.x *= -1
+                    if (face.modY != 0) velocity.y *= -1
+                    if (face.modZ != 0) velocity.z *= -1
 
-                        if (velocity != it.position - it.prevPosition) velocity *= (1 - bounceDrag)
-                    }
-                if (calcEntityForce)
-                    ray.hitEntity?.let { entity ->
-                        velocity += entity.velocity
-                        entityForces.put(entity, velocity.clone())
-                    }
+                    velocity.multiply(1 - bounceDrag)
+                }
 
                 it.position = it.prevPosition + velocity
             } catch (_: IllegalArgumentException) {
             }
         }
-    }
-
-    private fun tickEntityForce() {
-        entityForces.forEach {
-            it.key.velocity += it.value
-        }
-        entityForces.clear()
     }
 }

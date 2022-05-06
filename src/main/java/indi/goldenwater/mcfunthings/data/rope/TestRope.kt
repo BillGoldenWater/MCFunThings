@@ -2,17 +2,18 @@ package indi.goldenwater.mcfunthings.data.rope
 
 import indi.goldenwater.mcfunthings.type.rope.Point
 import indi.goldenwater.mcfunthings.type.rope.Rope
-import org.bukkit.util.Vector
+import org.bukkit.Location
 
 const val xMax = 21
 const val yMax = 25
 const val space = 0.15
 
-fun createTestRope(pos: Vector): Rope {
-    val testRope = Rope(iterationTimes = 100)
+fun createTestRope(loc: Location): Rope {
+    val testRope = Rope(iterationTimes = 100, world = loc.world, bounceDrag = 0.0)
+    val pos = loc.toVector()
 
     for (x in 1..xMax) {
-        testRope.addPoint(Point(pos.clone(), locked = (x - 1) % 20 == 0))
+        testRope.addPoint(Point(pos.clone(), locked = (x - 1) % 10 == 0))
         pos.x += space
     }
 
@@ -45,19 +46,6 @@ fun createTestRope(pos: Vector): Rope {
         }
     }
 
-    return testRope
-}
-
-fun createTestRope2(pos: Vector, prevPos: Vector): Rope {
-    val testRope = Rope()
-//    for (i in 1..100) {
-//        testRope.addPoint(
-//            Point(
-//                pos.clone().add(Vector.getRandom().subtract(Vector(0.5, 0.5, 0.5)).normalize() * 0.2),
-//                prevPos.clone()
-//            )
-//        )
-//    }
     return testRope
 }
 

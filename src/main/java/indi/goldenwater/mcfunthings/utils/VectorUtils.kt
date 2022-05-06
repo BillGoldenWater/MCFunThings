@@ -7,7 +7,7 @@ object Vector3 {
     fun up() = Vector(0.0, 1.0, 0.0)
     fun down() = Vector(0.0, -1.0, 0.0)
     fun zero() = Vector(0.0, 0.0, 0.0)
-    fun epsilon() = Vector(0.000001, 0.000001, 0.000001)
+    fun epsilon() = Vector(0.00001, 0.00001, 0.00001)
 }
 
 //region operators

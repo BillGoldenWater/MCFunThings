@@ -3,6 +3,7 @@ package indi.goldenwater.mcfunthings
 import indi.goldenwater.mcfunthings.data.rope.createTestRope
 import indi.goldenwater.mcfunthings.data.rope.space
 import indi.goldenwater.mcfunthings.data.rope.xMax
+import indi.goldenwater.mcfunthings.listener.OnEntityMoveEvent
 import indi.goldenwater.mcfunthings.type.rope.Rope
 import indi.goldenwater.mcfunthings.utils.*
 import org.bukkit.*
@@ -20,7 +21,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 object Loop : BukkitRunnable() {
-    lateinit var rope: Rope
+    var rope: Rope? = null
     var tickingRope: Boolean = false
 
     override fun run() {
@@ -98,8 +99,8 @@ object Loop : BukkitRunnable() {
                 }
             } else if (player.inventory.itemInOffHand.type == Material.STICK) {
                 val tLoc = eLoc + eLoc.direction * 5.0
-                rope = createTestRope(tLoc.toVector())
-//                rope = createTestRope2(tLoc.toVector(), tLoc.toVector() - eLoc.direction * 2.0)
+                rope = createTestRope(tLoc)
+//                rope = Rope(world = tLoc.world)
                 tickingRope = true
             }
 
@@ -113,22 +114,27 @@ object Loop : BukkitRunnable() {
         val angle = Math.toRadians(abs(eLoc.yaw - 360.0))
 
         if (player.inventory.itemInMainHand.type == Material.BOW)
-            rope.points.filterIndexed { i, _ -> i % 20 == 0 && i < xMax }.let {
-                it[0].position = tLoc.toVector().add(Vector(-10 * space, 0.0, 0.0).rotateAroundY(angle))
-                it[1].position = tLoc.toVector().add(Vector(10 * space, 0.0, 0.0).rotateAroundY(angle))
-            }
+            rope?.points?.filterIndexed { i, _ -> i % 10 == 0 && i < xMax }
+                ?.forEachIndexed { i, it ->
+                    it.position = tLoc.toVector().add(Vector((i - 1) * 10 * space, 0.0, 0.0).rotateAroundY(angle))
+                }
+
 //        if (player.inventory.itemInMainHand.type == Material.BOW)
-//            rope.addPoint(Point(tLoc.toVector(), tLoc.toVector() - eLoc.direction * 2.0))
+//            rope?.addPoint(Point(tLoc.toVector(), tLoc.toVector() - eLoc.direction * 2.0))
 
-        ParticleInfo(REDSTONE, DustOptions(Color.LIME, 0.3f)).drawRope(
-            rope = rope,
-            location = Location(tLoc.world, 0.0, 0.0, 0.0),
-            drawStick = false,
-            pointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.LIME, 0.5f)),
-            lockedPointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.RED, 0.5f)),
-        )
+        ParticleInfo(REDSTONE, DustOptions(Color.LIME, 0.3f))
+            .drawRope(
+                rope = rope ?: return,
+                location = Location(tLoc.world, 0.0, 0.0, 0.0),
+                drawStick = false,
+                pointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.AQUA, 0.5f)),
+                lockedPointParticleInfo = ParticleInfo(REDSTONE, DustOptions(Color.RED, 0.5f)),
+            )
 
-        rope.tick(eLoc.world)
+//        ParticleInfo(REDSTONE, DustOptions(Color.LIME, 0.5f))
+//            .drawPoint(player.boundingBox.center.toLocation(eLoc.world))
+
+        rope?.tick()
     }
 
     private fun processPlayerCanSee(player: Player) {
@@ -193,6 +199,8 @@ class MCFunThings : JavaPlugin() {
         // Plugin startup logic
 
         Loop.runTaskTimer(this, 0, 0)
+
+        registerEvents(OnEntityMoveEvent)
 
         logger.info("Enabled")
     }
